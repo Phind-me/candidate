@@ -1,26 +1,33 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Search, UserPlus, Mail, Phone, Calendar, X, Check, Shield, ShieldOff } from 'lucide-react';
-import { mockRecruiters, mockApplications } from '../data/mockData';
 import { Recruiter } from '../types';
+import { useRecruiters } from '../contexts/RecruitersContext';
+import { useApplications } from '../contexts/ApplicationsContext';
 
 const Recruiters: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [accessFilter, setAccessFilter] = useState<'all' | 'granted' | 'revoked'>('all');
-  const [selectedRecruiter, setSelectedRecruiter] = useState<Recruiter | null>(null);
-  
-  // Filter recruiters based on search term and access filter
-  const filteredRecruiters = mockRecruiters.filter(recruiter => {
-    const matchesSearch = 
-      recruiter.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      recruiter.company.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesAccess = 
-      accessFilter === 'all' ||
-      (accessFilter === 'granted' && recruiter.accessGranted) ||
-      (accessFilter === 'revoked' && !recruiter.accessGranted);
-    
-    return matchesSearch && matchesAccess;
-  });
+  const {
+    filteredRecruiters,
+    searchTerm,
+    setSearchTerm,
+    accessFilter,
+    setAccessFilter,
+    isLoading,
+    error,
+    activeRecruiter,
+    setActiveRecruiterId
+  } = useRecruiters();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-700"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="text-red-600">Error: {error}</div>;
+  }
   
   // Group recruiters by company
   const recruitersByCompany: Record<string, Recruiter[]> = {};
@@ -47,7 +54,7 @@ const Recruiters: React.FC = () => {
             <input
               type="text"
               placeholder="Search recruiters..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -59,7 +66,7 @@ const Recruiters: React.FC = () => {
           {/* Access Filter */}
           <div className="relative ml-2">
             <select
-              className="appearance-none pl-3 pr-8 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="appearance-none pl-3 pr-8 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
               value={accessFilter}
               onChange={(e) => setAccessFilter(e.target.value as 'all' | 'granted' | 'revoked')}
             >
@@ -91,7 +98,7 @@ const Recruiters: React.FC = () => {
                   <RecruiterCard 
                     key={recruiter.id} 
                     recruiter={recruiter} 
-                    onClick={() => setSelectedRecruiter(recruiter)}
+                    onClick={() => setActiveRecruiterId(recruiter.id)}
                   />
                 ))}
               </div>
@@ -106,10 +113,10 @@ const Recruiters: React.FC = () => {
       </div>
       
       {/* Recruiter Detail Modal */}
-      {selectedRecruiter && (
+      {activeRecruiter && (
         <RecruiterDetail 
-          recruiter={selectedRecruiter} 
-          onClose={() => setSelectedRecruiter(null)} 
+          recruiter={activeRecruiter} 
+          onClose={() => setActiveRecruiterId(null)} 
         />
       )}
     </div>
@@ -123,7 +130,8 @@ interface RecruiterCardProps {
 
 const RecruiterCard: React.FC<RecruiterCardProps> = ({ recruiter, onClick }) => {
   // Count applications from this recruiter
-  const applicationCount = recruiter.applications.length;
+  const { applications } = useApplications();
+  const applicationCount = applications.filter(app => app.recruiter === recruiter.id).length;
   
   return (
     <div 
@@ -188,10 +196,10 @@ interface RecruiterDetailProps {
 }
 
 const RecruiterDetail: React.FC<RecruiterDetailProps> = ({ recruiter, onClose }) => {
+  const { applications } = useApplications();
+  
   // Get applications from this recruiter
-  const recruiterApplications = mockApplications.filter(app => 
-    recruiter.applications.includes(app.id)
-  );
+  const recruiterApplications = applications.filter(app => app.recruiter === recruiter.id);
   
   // Format date
   const formatDate = (dateString: string) => {
@@ -249,19 +257,19 @@ const RecruiterDetail: React.FC<RecruiterDetailProps> = ({ recruiter, onClose })
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div className="p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center mb-1">
-                <Mail size={16} className="mr-2 text-blue-600" />
+                <Mail size={16} className="mr-2 text-amber-600" />
                 <span className="text-sm text-gray-500">Email</span>
               </div>
-              <a href={`mailto:${recruiter.email}`} className="text-blue-600 hover:underline">
+              <a href={`mailto:${recruiter.email}`} className="text-amber-600 hover:underline">
                 {recruiter.email}
               </a>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center mb-1">
-                <Phone size={16} className="mr-2 text-blue-600" />
+                <Phone size={16} className="mr-2 text-amber-600" />
                 <span className="text-sm text-gray-500">Phone</span>
               </div>
-              <a href={`tel:${recruiter.phone}`} className="text-blue-600 hover:underline">
+              <a href={`tel:${recruiter.phone}`} className="text-amber-600 hover:underline">
                 {recruiter.phone}
               </a>
             </div>
@@ -270,7 +278,7 @@ const RecruiterDetail: React.FC<RecruiterDetailProps> = ({ recruiter, onClose })
           {/* Access Information */}
           <div className="mb-6 p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center mb-1">
-              <Calendar size={16} className="mr-2 text-blue-600" />
+              <Calendar size={16} className="mr-2 text-amber-600" />
               <span className="text-sm text-gray-500">Access Status</span>
             </div>
             <p className="text-gray-900">
@@ -289,7 +297,7 @@ const RecruiterDetail: React.FC<RecruiterDetailProps> = ({ recruiter, onClose })
                 {recruiterApplications.map(app => (
                   <div 
                     key={app.id} 
-                    className="p-4 border border-gray-100 rounded-lg hover:bg-blue-50 transition-colors duration-150"
+                    className="p-4 border border-gray-100 rounded-lg hover:bg-amber-50 transition-colors duration-150"
                   >
                     <div className="flex justify-between">
                       <div>
@@ -302,18 +310,8 @@ const RecruiterDetail: React.FC<RecruiterDetailProps> = ({ recruiter, onClose })
                       </div>
                     </div>
                     <div className="mt-2 flex justify-between items-center">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        app.status === 'Applied' ? 'bg-gray-100 text-gray-800' :
-                        app.status === 'Screening' ? 'bg-blue-100 text-blue-800' :
-                        app.status === 'Interview' ? 'bg-purple-100 text-purple-800' :
-                        app.status === 'Technical' ? 'bg-yellow-100 text-yellow-800' :
-                        app.status === 'Offer' ? 'bg-green-100 text-green-800' :
-                        app.status === 'Accepted' ? 'bg-green-100 text-green-800' :
-                        app.status === 'Rejected' ? 'bg-red-100 text-red-800' : ''
-                      }`}>
-                        {app.status}
-                      </span>
-                      <div className="text-blue-600 text-sm cursor-pointer hover:underline">
+                      <ApplicationStatusBadge status={app.status} showIcon={true} />
+                      <div className="text-amber-600 text-sm cursor-pointer hover:underline">
                         View details
                       </div>
                     </div>

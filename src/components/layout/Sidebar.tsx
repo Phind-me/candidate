@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { X, Home, User, Briefcase, Users, Settings } from 'lucide-react';
+import { X, Home, User, Briefcase, Users, Settings, Mail } from 'lucide-react';
+import { useMessages } from '../../contexts/MessagesContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -8,6 +9,8 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, closeSidebar }) => {
+  const { unreadCount } = useMessages();
+
   return (
     <>
       {/* Mobile overlay */}
@@ -40,6 +43,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, closeSidebar }) => {
             <SidebarLink to="/profile" icon={<User size={20} />} label="My Profile" />
             <SidebarLink to="/applications" icon={<Briefcase size={20} />} label="Applications" />
             <SidebarLink to="/recruiters" icon={<Users size={20} />} label="Recruiters" />
+            <SidebarLink 
+              to="/messages" 
+              icon={<Mail size={20} />} 
+              label="Messages" 
+              badge={unreadCount > 0 ? unreadCount : undefined}
+            />
             <li className="mt-8">
               <SidebarLink to="/settings" icon={<Settings size={20} />} label="Settings" />
             </li>
@@ -54,9 +63,10 @@ interface SidebarLinkProps {
   to: string;
   icon: React.ReactNode;
   label: string;
+  badge?: number;
 }
 
-const SidebarLink: React.FC<SidebarLinkProps> = ({ to, icon, label }) => {
+const SidebarLink: React.FC<SidebarLinkProps> = ({ to, icon, label, badge }) => {
   return (
     <li>
       <NavLink
@@ -68,6 +78,11 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({ to, icon, label }) => {
       >
         <span className="mr-3">{icon}</span>
         <span>{label}</span>
+        {badge !== undefined && (
+          <span className="ml-auto bg-red-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+            {badge}
+          </span>
+        )}
       </NavLink>
     </li>
   );

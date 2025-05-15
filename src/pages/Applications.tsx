@@ -1,26 +1,40 @@
 import React, { useState } from 'react';
-import { Search, Filter, Calendar, List, ChevronDown, Clock } from 'lucide-react';
-import { mockApplications, mockRecruiters } from '../data/mockData';
+import { Search, Filter, Calendar, List, ChevronDown, Clock, Check } from 'lucide-react';
 import { Application, ApplicationStatus } from '../types';
 import ApplicationStatusBadge from '../components/applications/ApplicationStatusBadge';
 import ApplicationDetail from '../components/applications/ApplicationDetail';
+import { useApplications } from '../contexts/ApplicationsContext';
+import { useRecruiters } from '../contexts/RecruitersContext';
 
 const Applications: React.FC = () => {
-  const [view, setView] = useState<'list' | 'calendar'>('list');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ApplicationStatus | 'All'>('All');
-  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const { 
+    filteredApplications,
+    searchTerm,
+    setSearchTerm,
+    statusFilter,
+    setStatusFilter,
+    isLoading,
+    error,
+    activeApplication,
+    setActiveApplicationId
+  } = useApplications();
   
-  // Filter applications based on search term and status filter
-  const filteredApplications = mockApplications.filter(app => {
-    const matchesSearch = 
-      app.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.company.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'All' || app.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  const [view, setView] = useState<'list' | 'calendar'>('list');
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-700"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="text-red-600">Error: {error}</div>;
+  }
+
+  // Define the order of stages
+  const stages: ApplicationStatus[] = ['Applied', 'Screening', 'Interview', 'Technical', 'Offer', 'Accepted'];
   
   return (
     <div className="animate-fade-in">
@@ -37,7 +51,7 @@ const Applications: React.FC = () => {
             <input
               type="text"
               placeholder="Search applications..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -49,7 +63,7 @@ const Applications: React.FC = () => {
           {/* Status Filter */}
           <div className="relative ml-2">
             <select
-              className="appearance-none pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="appearance-none pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as ApplicationStatus | 'All')}
             >
@@ -74,14 +88,14 @@ const Applications: React.FC = () => {
         {/* View Toggle */}
         <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
           <button
-            className={`px-4 py-2 flex items-center ${view === 'list' ? 'bg-blue-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+            className={`px-4 py-2 flex items-center ${view === 'list' ? 'bg-amber-700 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
             onClick={() => setView('list')}
           >
             <List size={18} className="mr-1" />
             <span>List</span>
           </button>
           <button
-            className={`px-4 py-2 flex items-center ${view === 'calendar' ? 'bg-blue-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+            className={`px-4 py-2 flex items-center ${view === 'calendar' ? 'bg-amber-700 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
             onClick={() => setView('calendar')}
           >
             <Calendar size={18} className="mr-1" />
@@ -91,32 +105,18 @@ const Applications: React.FC = () => {
       </div>
       
       {view === 'list' ? (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="space-y-4">
           {filteredApplications.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recruiter</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredApplications.map(application => (
-                    <ApplicationRow 
-                      key={application.id} 
-                      application={application} 
-                      onClick={() => setSelectedApplication(application)}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            filteredApplications.map(application => (
+              <ApplicationCard 
+                key={application.id}
+                application={application}
+                stages={stages}
+                onSelect={() => setActiveApplicationId(application.id)}
+              />
+            ))
           ) : (
-            <div className="text-center py-8">
+            <div className="text-center py-8 bg-white rounded-xl shadow-sm">
               <Clock className="mx-auto text-gray-400" size={32} />
               <p className="mt-2 text-gray-500">No applications found</p>
             </div>
@@ -129,60 +129,103 @@ const Applications: React.FC = () => {
       )}
       
       {/* Application Detail Modal */}
-      {selectedApplication && (
+      {activeApplication && (
         <ApplicationDetail 
-          application={selectedApplication} 
-          onClose={() => setSelectedApplication(null)} 
+          application={activeApplication} 
+          onClose={() => setActiveApplicationId(null)} 
         />
       )}
     </div>
   );
 };
 
-interface ApplicationRowProps {
+interface ApplicationCardProps {
   application: Application;
-  onClick: () => void;
+  stages: ApplicationStatus[];
+  onSelect: () => void;
 }
 
-const ApplicationRow: React.FC<ApplicationRowProps> = ({ application, onClick }) => {
-  const recruiter = mockRecruiters.find(r => r.id === application.recruiter);
-  const lastUpdatedDate = new Date(application.lastUpdated);
-  const formattedDate = lastUpdatedDate.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric'
-  });
-  
+const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, stages, onSelect }) => {
+  const { recruiters } = useRecruiters();
+  const recruiter = recruiters.find(r => r.id === application.recruiter);
+
   return (
-    <tr 
-      className="hover:bg-blue-50 cursor-pointer transition-colors duration-150"
-      onClick={onClick}
+    <div 
+      className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow duration-200 cursor-pointer"
+      onClick={onSelect}
     >
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm font-medium text-gray-900">{application.jobTitle}</div>
-        <div className="text-xs text-gray-500">{application.location}</div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">{application.company}</div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center">
-          <div className="w-8 h-8 rounded-full overflow-hidden mr-2">
-            <img 
-              src={recruiter?.avatar || ''} 
-              alt={recruiter?.name || 'Recruiter'} 
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="text-sm text-gray-900">{recruiter?.name}</div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-1">{application.jobTitle}</h3>
+          <p className="text-gray-600">{application.company} • {application.location}</p>
         </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <ApplicationStatusBadge status={application.status} />
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-500">{formattedDate}</div>
-      </td>
-    </tr>
+        <div className="mt-2 md:mt-0">
+          <ApplicationStatusBadge status={application.status} showIcon={true} />
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="relative mb-4">
+        <div className="h-2 bg-gray-200 rounded-full">
+          <div 
+            className="h-full bg-amber-600 rounded-full transition-all duration-500"
+            style={{ 
+              width: `${((stages.indexOf(application.status) + 1) / stages.length) * 100}%`,
+              display: application.status === 'Rejected' ? 'none' : 'block'
+            }}
+          />
+        </div>
+        <div className="flex justify-between mt-2">
+          {stages.map((stage, index) => {
+            const isCompleted = stages.indexOf(application.status) >= index;
+            const isCurrent = application.status === stage;
+            
+            return (
+              <div 
+                key={stage}
+                className={`flex flex-col items-center relative ${index === 0 ? 'ml-0' : ''} ${
+                  index === stages.length - 1 ? 'mr-0' : ''
+                }`}
+                style={{ width: '16.66%' }}
+              >
+                <div 
+                  className={`w-4 h-4 rounded-full mb-1 flex items-center justify-center ${
+                    isCompleted ? 'bg-amber-600' : 'bg-gray-200'
+                  } ${isCurrent ? 'ring-2 ring-amber-200 ring-offset-2' : ''}`}
+                >
+                  {isCompleted && <Check size={12} className="text-white" />}
+                </div>
+                <span className={`text-xs ${isCompleted ? 'text-amber-600' : 'text-gray-400'} text-center`}>
+                  {stage}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+        <div className="flex items-center">
+          <Clock size={16} className="mr-1" />
+          Applied {new Date(application.appliedDate).toLocaleDateString()}
+        </div>
+        <div>
+          <span className="font-medium">Salary:</span> {application.salary}
+        </div>
+        {recruiter && (
+          <div className="flex items-center">
+            <div className="w-6 h-6 rounded-full overflow-hidden mr-2">
+              <img 
+                src={recruiter.avatar} 
+                alt={recruiter.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <span>{recruiter.name}</span>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

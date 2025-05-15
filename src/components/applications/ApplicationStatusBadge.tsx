@@ -1,11 +1,13 @@
 import React from 'react';
 import { ApplicationStatus } from '../../types';
+import { Check } from 'lucide-react';
 
 interface ApplicationStatusBadgeProps {
   status: ApplicationStatus;
+  showIcon?: boolean;
 }
 
-const ApplicationStatusBadge: React.FC<ApplicationStatusBadgeProps> = ({ status }) => {
+const ApplicationStatusBadge: React.FC<ApplicationStatusBadgeProps> = ({ status, showIcon = false }) => {
   const getStatusClasses = () => {
     switch (status) {
       case 'Applied':
@@ -28,7 +30,8 @@ const ApplicationStatusBadge: React.FC<ApplicationStatusBadgeProps> = ({ status 
   };
 
   return (
-    <span className={`badge ${getStatusClasses()}`}>
+    <span className={`badge ${getStatusClasses()} ${showIcon ? 'flex items-center' : ''}`}>
+      {showIcon && status !== 'Rejected' && <Check size={12} className="mr-1" />}
       {status}
     </span>
   );

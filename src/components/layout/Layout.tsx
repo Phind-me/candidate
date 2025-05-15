@@ -1,19 +1,31 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import { useUser } from '../../contexts/UserContext';
 
 const Layout: React.FC = () => {
-  const { user, isLoading } = useUser();
+  const { user, isLoading, error } = useUser();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-700"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-red-600">
+        Error: {error}
+      </div>
+    );
   }
 
   if (!user) {
-    return <div className="flex items-center justify-center min-h-screen">Please sign in</div>;
+    return <Navigate to="/login" replace />;
   }
 
   const toggleSidebar = () => {

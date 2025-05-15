@@ -2,33 +2,42 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Briefcase, Users, CheckCircle, Clock, Calendar } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
-import { mockApplications, mockRecruiters } from '../data/mockData';
+import { useDashboard } from '../contexts/DashboardContext';
 import { Application } from '../types';
 import ApplicationStatusBadge from '../components/applications/ApplicationStatusBadge';
 
 const Dashboard: React.FC = () => {
   const { user } = useUser();
+  const { applications, recruiters, isLoading, error } = useDashboard();
+  
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-600">Error: {error}</div>;
+  }
   
   // Calculate statistics
-  const totalApplications = mockApplications.length;
-  const activeApplications = mockApplications.filter(app => 
+  const totalApplications = applications.length;
+  const activeApplications = applications.filter(app => 
     !['Rejected', 'Accepted'].includes(app.status)
   ).length;
-  const acceptedApplications = mockApplications.filter(app => app.status === 'Accepted').length;
-  const interviewStage = mockApplications.filter(app => 
+  const acceptedApplications = applications.filter(app => app.status === 'Accepted').length;
+  const interviewStage = applications.filter(app => 
     ['Interview', 'Technical'].includes(app.status)
   ).length;
   
   // Get recent applications
-  const recentApplications = [...mockApplications]
+  const recentApplications = [...applications]
     .sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
     .slice(0, 3);
   
   // Active recruiters
-  const activeRecruiters = mockRecruiters.filter(r => r.accessGranted).length;
+  const activeRecruiters = recruiters.filter(r => r.accessGranted).length;
   
   // Get upcoming events
-  const upcomingEvents = getUpcomingEvents(mockApplications);
+  const upcomingEvents = getUpcomingEvents(applications);
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -154,7 +163,8 @@ interface ApplicationCardProps {
 }
 
 const ApplicationCard: React.FC<ApplicationCardProps> = ({ application }) => {
-  const recruiter = mockRecruiters.find(r => r.id === application.recruiter);
+  const { recruiters } = useDashboard();
+  const recruiter = recruiters.find(r => r.id === application.recruiter);
   
   return (
     <div className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200">

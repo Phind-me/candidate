@@ -1,9 +1,9 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { mockUserData } from '../data/mockData';
 import { User } from '../types';
 
 interface UserContextType {
-  user: User | null;
+  user: User | undefined;
   isLoading: boolean;
   error: string | null;
   updateUser: (userData: Partial<User>) => void;
@@ -12,13 +12,33 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(mockUserData);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [user, setUser] = useState<User | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      setIsLoading(true);
+      // Simulate API call
+      const userData = mockUserData;
+      
+      setUser(userData);
+      setError(null);
+    } catch (err) {
+      setError('Failed to fetch user data');
+      console.error('Error fetching user data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const updateUser = (userData: Partial<User>) => {
     setUser(prevUser => {
-      if (!prevUser) return null;
+      if (!prevUser) return undefined;
       return { ...prevUser, ...userData };
     });
   };

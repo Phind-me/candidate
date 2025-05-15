@@ -81,3 +81,13 @@ export interface ApplicationEvent {
   title: string;
   description: string;
 }
+
+export interface Message {
+  id: string;
+  title: string;
+  content: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  date: string;
+  read: boolean;
+  link?: string;
+}
