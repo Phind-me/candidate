@@ -13,7 +13,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, closeSidebar }) => {
 
   return (
     <>
-      {/* Mobile overlay */}
+      {/* Mobile overlay - only shown on small screens */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-gray-800 bg-opacity-50 z-20 md:hidden"
@@ -23,14 +23,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, closeSidebar }) => {
       
       {/* Sidebar */}
       <aside 
-        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-30 transform transition-transform duration-300 ease-in-out pt-16 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        } md:static md:translate-x-0 md:z-0`}
+        className={`fixed md:fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white shadow-lg z-20 transition-transform duration-300 
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="p-4 md:hidden">
           <button
             onClick={closeSidebar}
-            className="p-2 rounded-md text-gray-500 hover:bg-gray-100 focus:outline-none absolute top-4 right-4"
+            className="p-2 rounded-md text-gray-500 hover:bg-gray-100 focus:outline-none"
             aria-label="Close sidebar"
           >
             <X size={20} />

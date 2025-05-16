@@ -6,7 +6,7 @@ import { useUser } from '../../contexts/UserContext';
 
 const Layout: React.FC = () => {
   const { user, isLoading, error } = useUser();
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = React.useState(true);
 
   if (isLoading) {
     return (
@@ -28,16 +28,12 @@ const Layout: React.FC = () => {
     return <Navigate to="/login" replace />;
   }
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header toggleSidebar={toggleSidebar} />
-      <div className="flex flex-1 pt-16">
+    <div className="min-h-screen bg-gray-50">
+      <Header toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <div className="flex h-[calc(100vh-4rem)] pt-16">
         <Sidebar isOpen={sidebarOpen} closeSidebar={() => setSidebarOpen(false)} />
-        <main className={`flex-1 p-4 md:p-6 lg:p-8 transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'ml-0'}`}>
+        <main className={`w-full transition-all duration-300 p-4 md:p-6 lg:p-8 ${sidebarOpen ? 'md:pl-[280px]' : ''}`}>
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
